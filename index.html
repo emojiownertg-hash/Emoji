@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>TOXI Studio</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#04281a;--bg2:#073d27;--card:#0b4d31;--card2:#0e5e3b;--acc:#00e676;--acc2:#69f0ae;--txt:#eafff3;--mut:#9bd9b6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:var(--txt);background:radial-gradient(1200px 600px at 20% -10%,#0a6b43 0,transparent 60%),var(--bg);padding-bottom:84px}
+header{padding:18px 16px 8px;display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--acc),#00bfa5);display:grid;place-items:center;font-weight:800;color:#032;font-size:20px}
+h1{font-size:18px;margin:0}.sub{color:var(--mut);font-size:12px}
+.balance{margin-left:auto;background:var(--card);padding:8px 14px;border-radius:20px;font-weight:700;border:1px solid #1b7a50}
+main{padding:8px 14px;animation:fade .3s ease}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:linear-gradient(160deg,var(--card),var(--bg2));border:1px solid #14724a;border-radius:20px;padding:16px;margin:12px 0}
+.card h2{margin:0 0 6px;font-size:16px}.muted{color:var(--mut);font-size:13px}
+button{font:inherit;border:0;cursor:pointer;color:#032;background:linear-gradient(135deg,var(--acc),var(--acc2));padding:12px 16px;border-radius:14px;font-weight:700;width:100%;margin-top:10px}
+button.ghost{background:var(--card2);color:var(--txt);border:1px solid #1b7a50}
+input{width:100%;padding:12px;border-radius:12px;border:1px solid #1b7a50;background:#06321f;color:var(--txt);font:inherit;margin-top:8px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.group{background:var(--card2);border-radius:16px;padding:14px;text-align:center;border:1px solid #1b7a50;cursor:pointer}.group .ic{font-size:30px}.group b{display:block;margin-top:4px}.group small{color:var(--mut)}
+.tpl{background:#d4f5e1;border-radius:14px;padding:6px;text-align:center;color:#063;font-size:12px;font-weight:600;cursor:pointer;border:3px solid transparent}
+.tpl.sel{border-color:var(--acc)}.tpl img{width:100%;aspect-ratio:1;object-fit:contain;background:#9ad5b3;border-radius:10px}
+.tier{display:flex;align-items:center;gap:12px;background:var(--card2);border-radius:16px;padding:12px;border:1px solid #1b7a50;margin-top:8px}.tier .ic{font-size:28px}.tier .p{margin-left:auto;font-weight:800;color:var(--acc2)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:#031d12ee;backdrop-filter:blur(14px);border-top:1px solid #14724a;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+nav a{flex:1;text-align:center;font-size:11px;color:var(--mut);padding:6px 0;border-radius:12px}nav a .e{display:block;font-size:21px}nav a.on{color:var(--acc);background:#0a5a3a}
+.bar{position:fixed;left:14px;right:14px;bottom:76px}.pill{display:inline-block;background:#0a5a3a;border-radius:12px;padding:3px 9px;font-size:12px;margin:2px 4px 2px 0}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--acc);color:#032;padding:10px 16px;border-radius:14px;font-weight:700;z-index:9}
+</style></head><body>
+<header><div class="logo">T</div><div><h1>TOXI Studio</h1><div class="sub">@EmojiOwnerApp</div></div><div class="balance" id="bal">…</div></header>
+<main id="view"></main><div class="bar" id="bar"></div><nav id="nav"></nav>
+<script>
+const tg=window.Telegram.WebApp;tg.ready();tg.expand();try{tg.setHeaderColor('#04281a');tg.setBackgroundColor('#04281a')}catch(e){}
+let S=null,tab='home',group=null,sel=new Set(),tpls=[];const $=s=>document.querySelector(s);
+const api=async(p,b)=>{const r=await fetch(p,{method:b?'POST':'GET',headers:{'X-Init-Data':tg.initData,'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});if(!r.ok)throw new Error(r.status);return r.json()};
+const toast=t=>{const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)};
+const go=p=>tg.openTelegramLink(`https://t.me/${S.bot}?start=${p}`);const fw=s=>`${Math.floor(s/3600)} ч ${Math.floor(s%3600/60)} мин`;
+const TABS=[['home','🏠','Главная'],['catalog','🎞','Каталог'],['gifts','🎁','Бонусы'],['subs','⭐','Подписка'],['more','✨','Ещё']];
+function nav(){$('#nav').innerHTML=TABS.map(([i,e,t])=>`<a class="${tab===i?'on':''}" onclick="setTab('${i}')"><span class="e">${e}</span>${t}</a>`).join('');$('#bal').textContent=S?`💰 ${S.user.balance} шт.`:'…'}
+function setTab(t){tab=t;if(t!=='catalog')group=null;render()}
+function render(){nav();$('#bar').innerHTML='';const v=$('#view');if(!S){v.innerHTML='<div class="card">Загрузка…</div>';return}
+if(tab==='home'){v.innerHTML=`<div class="card"><h2>👋 Привет, ${S.user.name||'друг'}!</h2><div class="muted">Анимированные эмодзи и стикеры со своим текстом или лого.</div><button onclick="setTab('catalog')">🚀 Создать эмодзи</button><button class="ghost" onclick="go('shop')">🛒 Купить штуки</button></div>
+<div class="card"><h2>Аккаунт</h2><span class="pill">💰 ${S.user.balance} шт.</span>${S.sub.title?`<span class="pill">⭐ ${S.sub.title}</span><span class="pill">🎁 бесплатно сегодня: ${S.sub.free_left}</span>`:''}${S.user.discount?`<span class="pill">🎟 скидка ${S.user.discount}%</span>`:''}${S.user.debt?`<span class="pill">долг ${S.user.debt} шт.</span>`:''}</div>`}
+else if(tab==='catalog'){if(!group){v.innerHTML=`<div class="grid">${S.groups.map(g=>`<div class="group" onclick="openGroup('${g.id}')"><div class="ic">${g.icon}</div><b>${g.title}</b><small>${g.count?g.count+' шт.':'скоро'}</small></div>`).join('')}</div><div class="card muted">${S.groups.map(g=>`${g.icon} <b>${g.title}</b> — ${g.about}`).join('<br>')}</div>`}
+else{v.innerHTML=`<button class="ghost" style="margin:0 0 8px" onclick="group=null;sel.clear();render()">← Разделы</button>${tpls.length?`<div class="grid" style="grid-template-columns:repeat(3,1fr)">${tpls.map(t=>`<div class="tpl ${sel.has(t.key)?'sel':''}" onclick="toggle('${t.key}')"><img loading="lazy" src="/preview/${t.key}.webp" onerror="this.style.visibility='hidden'">${t.title}</div>`).join('')}</div>`:'<div class="card">Пусто, добавим позже. Посмотрите другие группы 🙌</div>'}`;if(sel.size)$('#bar').innerHTML=`<button onclick="make()">🚀 Продолжить в чате (${sel.size})</button>`}}
+else if(tab==='gifts'){const w=S.user.bonus_wait;v.innerHTML=`<div class="card"><h2>🎁 Бонус дня</h2><div class="muted">${w?'Следующий через '+fw(w):'Доступен: +'+S.user.bonus_units+' шт.'}</div><button ${w?'class="ghost" disabled':''} onclick="bonus()">Забрать бонус</button></div>
+<div class="card"><h2>🎟 Промокод</h2><input id="code" placeholder="Введи промокод"><button onclick="promo()">Активировать</button></div>
+<div class="card"><h2>👥 Рефералы</h2><div class="muted">Приглашено: ${S.user.refs}</div><input readonly value="${S.user.ref_link}" onclick="this.select()"><button class="ghost" onclick="tg.openTelegramLink('https://t.me/share/url?url='+encodeURIComponent(S.user.ref_link))">📤 Поделиться</button></div>
+<div class="card"><h2>🎁 Подарить штуки</h2><button class="ghost" onclick="go('gift')">Открыть в чате</button></div>`}
+else if(tab==='subs'){v.innerHTML=`<div class="card"><h2>⭐ Подписка</h2><div class="muted">Бесплатные эмодзи каждый день, скидки, скрытый ник.</div></div>${S.tiers.map(t=>`<div class="tier"><div class="ic">${t.icon}</div><div><b>${t.title}</b><div class="muted">${t.free_day} эмодзи/день${t.discount?' · скидка '+t.discount+'%':''}</div></div><div class="p">${t.price}⭐</div></div>`).join('')}<button onclick="go('subs')">Оформить в чате</button>${S.sub.title?`<div class="card">Активна: <b>${S.sub.title}</b> до ${new Date(S.sub.until*1000).toLocaleDateString('ru')}</div>`:''}`}
+else{v.innerHTML=`<div class="card"><h2>🏆 Конкурсы</h2>${S.contests.length?S.contests.map(c=>`<div class="tier"><div class="ic">🏆</div><div><b>${c.prize} шт. × ${c.winners}</b><div class="muted">участников: ${c.parts}${c.paid?' · ⭐'+c.price:' · бесплатно'}</div></div><button style="width:auto;margin:0" onclick="go('c_${c.id}')">Участвовать</button></div>`).join(''):'<div class="muted">Сейчас конкурсов нет.</div>'}</div>
+<div class="card"><h2>🔄 Конвертер паков</h2><button class="ghost" onclick="go('conv')">Открыть в чате</button></div><div class="card"><button class="ghost" onclick="tg.close()">Закрыть Mini App</button></div>`}}
+async function openGroup(id){group=id;sel.clear();tpls=await api('/api/templates?group='+id);render()}
+function toggle(k){sel.has(k)?sel.delete(k):sel.add(k);render()}
+function make(){go('mk_'+[...sel].join('.'))}
+async function bonus(){const r=await api('/api/bonus',{});toast(r.ok?'🎁 Бонус получен!':'Уже забрано');await load()}
+async function promo(){const r=await api('/api/promo',{code:$('#code').value});toast(r.message.slice(0,70));await load()}
+async function load(){S=await api('/api/state');render()}
+load().catch(()=>{$('#view').innerHTML='<div class="card">Открой Mini App из бота — так я смогу тебя узнать.</div>'});
+</script></body></html>
